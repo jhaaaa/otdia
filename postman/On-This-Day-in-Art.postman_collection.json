@@ -1,0 +1,366 @@
+{
+  "info": {
+    "name": "On This Day in Art — Met Museum + AI",
+    "_postman_id": "on-this-day-in-art-v1",
+    "description": "A collection exploring the Metropolitan Museum of Art Open Access API, combined with AI requests to generate poetic reflections on artworks. Built to demonstrate Postman's AI request and Agent Mode capabilities.\n\nMCP Server: met_mcp_server.py exposes these same endpoints as tools for Postman Agent Mode.\n\nSee: https://metmuseum.github.io/",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "met_base",
+      "value": "https://collectionapi.metmuseum.org/public/collection/v1",
+      "type": "string"
+    },
+    {
+      "key": "anthropic_base",
+      "value": "https://api.anthropic.com/v1",
+      "type": "string"
+    },
+    {
+      "key": "anthropic_api_key",
+      "value": "YOUR_API_KEY_HERE",
+      "type": "string"
+    },
+    {
+      "key": "sample_object_id",
+      "value": "45734",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Met Museum API",
+      "item": [
+        {
+          "name": "Search artworks by keyword",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{met_base}}/search?q=June&hasImages=true",
+              "host": ["{{met_base}}"],
+              "path": ["search"],
+              "query": [
+                { "key": "q", "value": "June", "description": "Search term — try a month name, artist, or theme" },
+                { "key": "hasImages", "value": "true", "description": "Only return artworks with images" },
+                { "key": "departmentId", "value": "", "disabled": true, "description": "Filter by department ID (see /departments)" }
+              ]
+            },
+            "description": "Search the Met collection by keyword. Returns an array of object IDs. Use these IDs in subsequent requests to fetch full artwork details.\n\nTry changing 'q' to a month name (January, February...) to power the 'On This Day' discovery flow."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has objectIDs array', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('objectIDs');",
+                  "    pm.expect(json.objectIDs).to.be.an('array');",
+                  "});",
+                  "pm.test('Has total count', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('total');",
+                  "});",
+                  "",
+                  "// Save first ID for downstream requests",
+                  "const ids = pm.response.json().objectIDs;",
+                  "if (ids && ids.length > 0) {",
+                  "    pm.collectionVariables.set('sample_object_id', ids[0]);",
+                  "    console.log('Saved object ID:', ids[0]);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get artwork detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{met_base}}/objects/{{sample_object_id}}",
+              "host": ["{{met_base}}"],
+              "path": ["objects", "{{sample_object_id}}"]
+            },
+            "description": "Fetch full metadata for a single artwork. Returns title, artist, date, culture, medium, dimensions, tags, and image URLs.\n\nThe {{sample_object_id}} variable is populated automatically by the 'Search artworks' test script, or set it manually to any Met object ID."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has title', () => pm.expect(pm.response.json()).to.have.property('title'));",
+                  "pm.test('Has objectID', () => pm.expect(pm.response.json()).to.have.property('objectID'));",
+                  "",
+                  "// Store artwork data for AI request",
+                  "const art = pm.response.json();",
+                  "pm.collectionVariables.set('artwork_title', art.title || 'Untitled');",
+                  "pm.collectionVariables.set('artwork_artist', art.artistDisplayName || 'Unknown artist');",
+                  "pm.collectionVariables.set('artwork_date', art.objectDate || '');",
+                  "pm.collectionVariables.set('artwork_medium', art.medium || '');",
+                  "pm.collectionVariables.set('artwork_culture', art.culture || '');",
+                  "pm.collectionVariables.set('artwork_dept', art.department || '');",
+                  "pm.collectionVariables.set('artwork_tags', (art.tags || []).map(t => t.term).join(', '));",
+                  "",
+                  "console.log('Title:', art.title);",
+                  "console.log('Artist:', art.artistDisplayName);",
+                  "console.log('Date:', art.objectDate);",
+                  "console.log('Image:', art.primaryImageSmall);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List all departments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{met_base}}/departments",
+              "host": ["{{met_base}}"],
+              "path": ["departments"]
+            },
+            "description": "Returns all Met Museum departments with their IDs. Use department IDs as filters in the search endpoint."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has departments array', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('departments');",
+                  "    pm.expect(pm.response.json().departments).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search by department (Asian Art)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{met_base}}/search?q=spring&hasImages=true&departmentId=6",
+              "host": ["{{met_base}}"],
+              "path": ["search"],
+              "query": [
+                { "key": "q", "value": "spring" },
+                { "key": "hasImages", "value": "true" },
+                { "key": "departmentId", "value": "6", "description": "6 = Asian Art" }
+              ]
+            },
+            "description": "Example of a filtered search — Asian Art department, keyword 'spring'. Shows how to narrow results by department ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. AI Requests (Claude)",
+      "item": [
+        {
+          "name": "Generate poetic blurb for artwork",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{anthropic_api_key}}" },
+              { "key": "anthropic-version", "value": "2023-06-01" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 200,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a poet and art writer. Given this artwork from the Metropolitan Museum of Art, write a single short paragraph (3–5 sentences) as a poetic 'On This Day in Art' blurb. Be evocative, specific to the work, and end with a resonant image or thought. Do not start with 'On this day.' Write in present tense.\\n\\nArtwork: \\\"{{artwork_title}}\\\"\\nArtist: {{artwork_artist}}\\nDate: {{artwork_date}}\\nCulture: {{artwork_culture}}\\nMedium: {{artwork_medium}}\\nDepartment: {{artwork_dept}}\\nTags: {{artwork_tags}}\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{anthropic_base}}/messages",
+              "host": ["{{anthropic_base}}"],
+              "path": ["messages"]
+            },
+            "description": "Send artwork metadata to Claude and receive a poetic 'On This Day in Art' reflection. \n\nThis request uses variables populated by the 'Get artwork detail' test script, making the workflow chainable: search → get detail → generate blurb.\n\nRequires {{anthropic_api_key}} to be set in collection variables."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has content array', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('content');",
+                  "    pm.expect(json.content).to.be.an('array').with.length.above(0);",
+                  "});",
+                  "pm.test('Content is text type', () => {",
+                  "    pm.expect(pm.response.json().content[0].type).to.equal('text');",
+                  "});",
+                  "pm.test('Blurb is non-empty', () => {",
+                  "    const text = pm.response.json().content[0].text;",
+                  "    pm.expect(text).to.be.a('string').with.length.above(20);",
+                  "});",
+                  "",
+                  "// Log the blurb",
+                  "const blurb = pm.response.json().content?.[0]?.text;",
+                  "if (blurb) console.log('Generated blurb:\\n', blurb);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Compare models — same artwork, two voices",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{anthropic_api_key}}" },
+              { "key": "anthropic-version", "value": "2023-06-01" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 200,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"In the voice of a museum guard who has watched this painting for thirty years, write 3 sentences about what you notice. Be specific, human, a little tired.\\n\\nArtwork: \\\"{{artwork_title}}\\\"\\nArtist: {{artwork_artist}}\\nDate: {{artwork_date}}\\nMedium: {{artwork_medium}}\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{anthropic_base}}/messages",
+              "host": ["{{anthropic_base}}"],
+              "path": ["messages"]
+            },
+            "description": "Same artwork, different prompt voice — a museum guard's perspective. Run this alongside 'Generate poetic blurb' to compare how prompt framing shapes AI output. This demonstrates Postman's model comparison capability."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Full Workflow (Run in order)",
+      "item": [
+        {
+          "name": "Step 1 — Search for today's artworks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{met_base}}/search?q=June&hasImages=true",
+              "host": ["{{met_base}}"],
+              "path": ["search"],
+              "query": [
+                { "key": "q", "value": "June" },
+                { "key": "hasImages", "value": "true" }
+              ]
+            },
+            "description": "Step 1 of 3. Searches the Met for artworks. The test script saves the first object ID to {{sample_object_id}} for use in Step 2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Search returned results', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.total).to.be.above(0);",
+                  "});",
+                  "const ids = pm.response.json().objectIDs;",
+                  "if (ids && ids.length > 0) {",
+                  "    pm.collectionVariables.set('sample_object_id', ids[0]);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Step 2 — Get artwork details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{met_base}}/objects/{{sample_object_id}}",
+              "host": ["{{met_base}}"],
+              "path": ["objects", "{{sample_object_id}}"]
+            },
+            "description": "Step 2 of 3. Fetches full artwork metadata using the ID from Step 1. Saves artwork fields to collection variables for use in Step 3."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const art = pm.response.json();",
+                  "pm.collectionVariables.set('artwork_title', art.title || 'Untitled');",
+                  "pm.collectionVariables.set('artwork_artist', art.artistDisplayName || 'Unknown artist');",
+                  "pm.collectionVariables.set('artwork_date', art.objectDate || '');",
+                  "pm.collectionVariables.set('artwork_medium', art.medium || '');",
+                  "pm.collectionVariables.set('artwork_culture', art.culture || '');",
+                  "pm.collectionVariables.set('artwork_dept', art.department || '');",
+                  "pm.collectionVariables.set('artwork_tags', (art.tags || []).map(t => t.term).join(', '));",
+                  "pm.test('Artwork has title', () => pm.expect(art.title).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Step 3 — Generate poetic blurb",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{anthropic_api_key}}" },
+              { "key": "anthropic-version", "value": "2023-06-01" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 200,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a poet and art writer. Given this artwork from the Metropolitan Museum of Art, write a single short paragraph (3–5 sentences) as a poetic 'On This Day in Art' blurb. Be evocative, specific to the work, and end with a resonant image or thought. Do not start with 'On this day.' Write in present tense.\\n\\nArtwork: \\\"{{artwork_title}}\\\"\\nArtist: {{artwork_artist}}\\nDate: {{artwork_date}}\\nCulture: {{artwork_culture}}\\nMedium: {{artwork_medium}}\\nDepartment: {{artwork_dept}}\\nTags: {{artwork_tags}}\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{anthropic_base}}/messages",
+              "host": ["{{anthropic_base}}"],
+              "path": ["messages"]
+            },
+            "description": "Step 3 of 3. Sends artwork metadata from Step 2 to Claude and receives a poetic blurb. Run Steps 1→2→3 in Collection Runner to see the full pipeline execute end-to-end."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Blurb generated successfully', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const text = pm.response.json().content?.[0]?.text;",
+                  "    pm.expect(text).to.be.a('string').with.length.above(20);",
+                  "    console.log('\\n=== POETIC BLURB ===');",
+                  "    console.log(text);",
+                  "    console.log('===================\\n');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Run these three requests in order (or use Collection Runner) to execute the full On This Day in Art pipeline:\n1. Search Met for today's artworks\n2. Fetch full details for the first result\n3. Send to Claude for a poetic blurb\n\nThe test scripts chain the requests automatically via collection variables."
+    }
+  ]
+}

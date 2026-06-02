@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(node /Users/jenniferhasegawa/src/otdia/server/build/index.js)",
+      "WebFetch(domain:www.postman.com)",
+      "WebFetch(domain:learning.postman.com)",
+      "Bash(open /Users/jenniferhasegawa/src/otdia/website/index.html)"
+    ]
+  }
+}
