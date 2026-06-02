@@ -125,14 +125,16 @@ function renderCard(artwork, searchUsed) {
 
 // ── Main load flow ───────────────────────────────────────────────────────────
 function setStatus(html) {
-  document.getElementById('status').innerHTML = html;
+  const el = document.getElementById('status');
+  el.classList.remove('status-welcome');
+  el.innerHTML = html;
 }
 
 function clearGallery() {
   document.getElementById('gallery').innerHTML = '';
 }
 
-async function loadArt(month, day, deptId, limit = 3) {
+async function loadArt(month, day, deptId, limit = 1) {
   clearGallery();
   const label = `${MONTH_NAMES[month]} ${day}`;
   setStatus(`<span class="spinner"></span> Searching the Met collection for <em>${label}</em>…`);
@@ -207,7 +209,7 @@ async function loadArt(month, day, deptId, limit = 3) {
 // ── Event listeners ──────────────────────────────────────────────────────────
 document.getElementById('load-btn').addEventListener('click', () => {
   const deptId = document.getElementById('dept-select').value;
-  loadArt(todayMonth, todayDay, deptId);
+  loadArt(todayMonth, todayDay, deptId, 1);
 });
 
 document.getElementById('random-btn').addEventListener('click', () => {
@@ -216,6 +218,3 @@ document.getElementById('random-btn').addEventListener('click', () => {
   const randDay   = Math.floor(Math.random() * 28) + 1;
   loadArt(randMonth, randDay, deptId, 1);
 });
-
-// ── Auto-load on page open ───────────────────────────────────────────────────
-loadArt(todayMonth, todayDay, document.getElementById('dept-select').value);
