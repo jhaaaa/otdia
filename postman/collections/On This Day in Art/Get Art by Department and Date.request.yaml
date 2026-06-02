@@ -1,0 +1,132 @@
+$kind: http-request
+description: |-
+  ## On This Day in Art
+
+  Fetches artworks from The Metropolitan Museum of Art collection for a given department that have images available.
+
+  ### The Met Museum API
+  Base URL: https://collectionapi.metmuseum.org/public/collection/v1/
+
+  ### Variables
+  - `departmentId` — The Met department ID (default: 11 = European Paintings). See /departments endpoint for full list.
+  - `dateBegin` / `dateEnd` — Set automatically by the pre-request script to span all years.
+  - `todayLabel` — Human-readable date label (e.g., "June 2"), set by pre-request script.
+
+  ### Common Department IDs
+  | ID | Department |
+  |----|----------|
+  | 1  | American Decorative Arts |
+  | 3  | Ancient Near Eastern Art |
+  | 4  | Arms and Armor |
+  | 6  | Asian Art |
+  | 9  | Drawings and Prints |
+  | 10 | Egyptian Art |
+  | 11 | European Paintings |
+  | 12 | European Sculpture and Decorative Arts |
+  | 13 | Greek and Roman Art |
+  | 17 | Medieval Art |
+  | 21 | Modern Art |
+
+  ### Response
+  Returns `{ total, objectIDs }` — use the objectIDs to fetch individual artwork details from:
+  `GET /objects/{objectID}`
+url: https://collectionapi.metmuseum.org/public/collection/v1/search
+method: GET
+queryParams:
+  q: "{{searchQuery}}"
+  hasImages: "true"
+  departmentId: "{{departmentId}}"
+  dateBegin: "{{dateBegin}}"
+  dateEnd: "{{dateEnd}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // "On This Day in Art" — build search query based on today's date
+      const now = new Date();
+      const month = now.getMonth() + 1; // 1-12
+      const day = now.getDate();        // 1-31
+
+      const monthNames = ["January","February","March","April","May","June",
+                          "July","August","September","October","November","December"];
+      const monthName = monthNames[month - 1];
+      const todayLabel = `${monthName} ${day}`;
+      const monthLabel = monthName;
+
+      // Store labels for use in test script and downstream requests
+      pm.variables.set("todayLabel", todayLabel);
+      pm.variables.set("monthLabel", monthLabel);
+      pm.variables.set("searchQuery", todayLabel); // start with full "June 2" search
+
+      // Default departmentId to 11 (European Paintings) if not already set
+      if (!pm.variables.get("departmentId")) {
+          pm.variables.set("departmentId", 11);
+      }
+
+      console.log(`Searching for: "${todayLabel}" | Department: ${pm.variables.get("departmentId")}`);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      const json = pm.response.json();
+      const departmentId = pm.variables.get("departmentId");
+      const todayLabel = pm.variables.get("todayLabel");   // e.g. "June 2"
+      const monthLabel = pm.variables.get("monthLabel");   // e.g. "June"
+
+      function pickRandom(objectIDs) {
+          const randomIndex = Math.floor(Math.random() * Math.min(objectIDs.length, 100));
+          return objectIDs[randomIndex];
+      }
+
+      function setResult(objectId, searchUsed) {
+          pm.collectionVariables.set("randomObjectId", objectId);
+          pm.collectionVariables.set("searchUsed", searchUsed);
+          console.log(`randomObjectId: ${objectId} | search used: "${searchUsed}"`);
+      }
+
+      if (json.total > 0 && json.objectIDs) {
+          // Primary: full date match e.g. "June 2"
+          pm.test("Results found for today's date", function () {
+              pm.expect(json.total).to.be.above(0);
+              console.log(`Found ${json.total} artworks matching "${todayLabel}"`);
+          });
+          setResult(pickRandom(json.objectIDs), todayLabel);
+      } else {
+          // Fallback 1: month only e.g. "June"
+          console.log(`No results for "${todayLabel}" — trying month-only: "${monthLabel}"`);
+          const monthUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${encodeURIComponent(monthLabel)}&hasImages=true&departmentId=${departmentId}`;
+
+          pm.sendRequest(monthUrl, function (err, monthRes) {
+              if (!err && monthRes) {
+                  const monthJson = monthRes.json();
+                  if (monthJson.total > 0 && monthJson.objectIDs) {
+                      pm.test("Results found for this month", function () {
+                          pm.expect(monthJson.total).to.be.above(0);
+                          console.log(`Found ${monthJson.total} artworks matching "${monthLabel}"`);
+                      });
+                      setResult(pickRandom(monthJson.objectIDs), monthLabel);
+                      return;
+                  }
+              }
+
+              // Fallback 2: department only
+              console.log(`No results for "${monthLabel}" — falling back to department-only`);
+              const deptUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=*&hasImages=true&departmentId=${departmentId}`;
+
+              pm.sendRequest(deptUrl, function (err2, deptRes) {
+                  if (!err2 && deptRes) {
+                      const deptJson = deptRes.json();
+                      pm.test("Fallback: department results found", function () {
+                          pm.expect(deptJson.total).to.be.above(0);
+                      });
+                      if (deptJson.total > 0 && deptJson.objectIDs) {
+                          setResult(pickRandom(deptJson.objectIDs), "department-only");
+                      }
+                  }
+              });
+          });
+      }
+    language: text/javascript
+order: 2000

@@ -1,0 +1,61 @@
+$kind: http-request
+description: |-
+  ## Get Artwork Detail
+
+  Fetches the full metadata for a single artwork from The Metropolitan Museum of Art, using the randomly selected `objectID` stored by the **Get Art by Department and Date** request.
+
+  ### Variables
+  - `randomObjectId` — Set automatically by the previous request's test script. Represents a randomly chosen artwork from today's results for the selected department.
+
+  ### Response fields used downstream
+  - `title` — Artwork title
+  - `artistDisplayName` — Artist name
+  - `objectDate` — Date/period of the artwork
+  - `medium` — Materials used
+  - `dimensions` — Physical dimensions
+  - `primaryImage` — URL of the primary image
+  - `department` — Department name
+  - `culture` — Culture of origin
+  - `creditLine` — Museum credit line
+  - `objectURL` — Link to the Met's page for this artwork
+url: https://collectionapi.metmuseum.org/public/collection/v1/objects/{{randomObjectId}}
+method: GET
+body:
+  type: text
+  content: ""
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Artwork has required fields", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("objectID");
+          pm.expect(json).to.have.property("title");
+          pm.expect(json).to.have.property("primaryImage");
+      });
+
+      pm.test("Store artwork metadata for Gemini summary", function () {
+          const json = pm.response.json();
+
+          // Build a compact metadata object to pass to Gemini
+          const artworkData = {
+              title: json.title || "Unknown Title",
+              artist: json.artistDisplayName || "Unknown Artist",
+              date: json.objectDate || "Unknown Date",
+              medium: json.medium || "Unknown Medium",
+              dimensions: json.dimensions || "Unknown Dimensions",
+              department: json.department || "Unknown Department",
+              culture: json.culture || "",
+              creditLine: json.creditLine || "",
+              objectURL: json.objectURL || "",
+              primaryImage: json.primaryImage || ""
+          };
+
+          pm.collectionVariables.set("artworkData", JSON.stringify(artworkData));
+          console.log(`Stored artwork: "${artworkData.title}" by ${artworkData.artist} (${artworkData.date})`);
+      });
+    language: text/javascript
+order: 3000

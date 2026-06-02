@@ -1,0 +1,7 @@
+$kind: collection
+variables:
+  departments: ""
+  randomObjectId: ""
+  artworkData: ""
+  departmentId: ""
+  searchUsed: ""

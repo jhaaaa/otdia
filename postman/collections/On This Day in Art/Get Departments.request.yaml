@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  ## Get Departments
+
+  Fetches the full list of departments from The Metropolitan Museum of Art collection API. Use this to populate a drop-down in your UI so users can select which department they want to browse.
+
+  ### Response
+  Returns an array of department objects:
+  ```json
+  {
+    "departments": [
+      { "departmentId": 1, "displayName": "American Decorative Arts" },
+      { "departmentId": 11, "displayName": "European Paintings" },
+      ...
+    ]
+  }
+  ```
+
+  ### Usage
+  Pass the selected `departmentId` as a variable into the **Get Art by Department and Date** request to filter results by department.
+url: https://collectionapi.metmuseum.org/public/collection/v1/departments
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Pick a random department and set departmentId", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("departments");
+          pm.expect(json.departments).to.be.an("array").with.length.above(0);
+
+          const departments = json.departments;
+          const randomIndex = Math.floor(Math.random() * departments.length);
+          const randomDept = departments[randomIndex];
+
+          pm.collectionVariables.set("departmentId", randomDept.departmentId);
+          console.log(`Selected department: ${randomDept.displayName} (ID: ${randomDept.departmentId})`);
+      });
+    language: text/javascript
+order: 1000

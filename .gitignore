@@ -14,8 +14,9 @@ server/build/
 .env.production.local
 .vercel
 
-# Postman environment export (contains API keys)
+# Postman environment files (contain API keys)
 *.environment.json
+postman/environments/
 
 # macOS
 .DS_Store
