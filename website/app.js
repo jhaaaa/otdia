@@ -132,7 +132,7 @@ function clearGallery() {
   document.getElementById('gallery').innerHTML = '';
 }
 
-async function loadArt(month, day, deptId) {
+async function loadArt(month, day, deptId, limit = 3) {
   clearGallery();
   const label = `${MONTH_NAMES[month]} ${day}`;
   setStatus(`<span class="spinner"></span> Searching the Met collection for <em>${label}</em>…`);
@@ -164,31 +164,38 @@ async function loadArt(month, day, deptId) {
       throw new Error('No artworks found.');
     }
 
-    // Pick up to 3 random artworks to show
-    const ids = result.objectIDs.slice(0, 100);
-    const picked = [];
-    const used = new Set();
-    while (picked.length < Math.min(3, ids.length)) {
-      const idx = Math.floor(Math.random() * ids.length);
-      if (!used.has(idx)) { used.add(idx); picked.push(ids[idx]); }
+    // Shuffle up to 100 IDs, then walk through until we have `limit` with images
+    const pool = result.objectIDs.slice(0, 100);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
     }
 
     const tierLabel = searchUsed === 'department-only'
       ? 'department collection'
       : `"${searchUsed}"`;
-    setStatus(`Found ${result.total.toLocaleString()} artworks matching ${tierLabel}. Showing ${picked.length}.`);
+    setStatus(`<span class="spinner"></span> Found ${result.total.toLocaleString()} artworks matching ${tierLabel}. Loading…`);
 
-    // Fetch and render each artwork
-    for (const id of picked) {
+    // Fetch artworks one by one, skipping those without images, until we hit limit
+    let rendered = 0;
+    for (const id of pool) {
+      if (rendered >= limit) break;
       try {
         const artwork = await getArtwork(id);
         if (artwork && artwork.primaryImage) {
           renderCard(artwork, searchUsed);
+          rendered++;
         }
       } catch (e) {
         console.warn('Skipping artwork', id, e);
       }
     }
+
+    if (rendered === 0) {
+      throw new Error('None of the matched artworks had images. Try a different department.');
+    }
+
+    setStatus(`Found ${result.total.toLocaleString()} artworks matching ${tierLabel}. Showing ${rendered}.`);
 
   } catch (err) {
     setStatus('');
@@ -207,7 +214,7 @@ document.getElementById('random-btn').addEventListener('click', () => {
   const deptId = document.getElementById('dept-select').value;
   const randMonth = Math.floor(Math.random() * 12);
   const randDay   = Math.floor(Math.random() * 28) + 1;
-  loadArt(randMonth, randDay, deptId);
+  loadArt(randMonth, randDay, deptId, 1);
 });
 
 // ── Auto-load on page open ───────────────────────────────────────────────────
