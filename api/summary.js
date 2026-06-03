@@ -14,17 +14,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
   }
 
-  // Build date context string (exact logic from Postman collection)
-  let dateContext;
-  const label = todayLabel || 'today';
-  if (searchUsed === 'department-only') {
-    dateContext = `This artwork was selected from the department's collection. No direct date match was found for ${label}, so treat it as a general highlight.`;
-  } else if (searchUsed === label) {
-    dateContext = `This artwork was selected because its recorded date or metadata contains "${label}" — making it a genuine "On This Day" connection.`;
-  } else {
-    dateContext = `This artwork was selected because its recorded date or metadata contains "${searchUsed}" — a connection to the current month.`;
-  }
-
   const artworkStr = typeof artworkData === 'string'
     ? artworkData
     : JSON.stringify(artworkData);
@@ -33,11 +22,7 @@ export default async function handler(req, res) {
 
 Based on the following artwork metadata from The Metropolitan Museum of Art, write a Chillomena Punk-style commentary on this piece. It should be funny, punchy, and exactly around 150 words. No more than 150 words.
 
-Today's date is ${label}. ${dateContext}
-
-Naturally work in the date connection in Chillomena's voice — e.g. if it's a genuine "On This Day" match, she might say something like "On this very day, probably, some bloke was painting this." If it's a month connection, she might say "Apparently ${searchUsed} has always been a big month for art. Or maybe just this one." If there's no date connection, she can just introduce it as today's featured artwork in her own baffling way.
-
-Make sure the commentary still conveys: what the artwork looks like and what's happening in it, something about the artist or the era, and why it matters — all filtered through Chillomena's unique lens.
+Make sure the commentary conveys: what the artwork looks like and what's happening in it, something about the artist or the era, and why it matters — all filtered through Chillomena's unique lens.
 Keep all content family-friendly and avoid anything harmful, offensive, or inappropriate — Chillomena is baffled by art, not by decency.
 
 Artwork metadata:
