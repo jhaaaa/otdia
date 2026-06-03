@@ -1,3 +1,4 @@
+// v2 — limit=1, no auto-load
 const MET_BASE = 'https://collectionapi.metmuseum.org/public/collection/v1';
 const MONTH_NAMES = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
