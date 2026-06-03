@@ -5,7 +5,13 @@
       "Bash(node /Users/jenniferhasegawa/src/otdia/server/build/index.js)",
       "WebFetch(domain:www.postman.com)",
       "WebFetch(domain:learning.postman.com)",
-      "Bash(open /Users/jenniferhasegawa/src/otdia/website/index.html)"
+      "Bash(open /Users/jenniferhasegawa/src/otdia/website/index.html)",
+      "mcp__on-this-day-in-art__get_artworks_for_today",
+      "mcp__on-this-day-in-art__get_artwork_detail",
+      "mcp__on-this-day-in-art__get_departments",
+      "mcp__on-this-day-in-art__search_artworks",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

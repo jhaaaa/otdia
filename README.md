@@ -47,7 +47,12 @@ otdia/
 ├── api/
 │   └── summary.js        # Vercel serverless function — calls Gemini API
 ├── server/
-│   └── met_mcp_server.py # MCP server exposing Met API tools to AI agents
+│   ├── src/
+│   │   └── index.ts          # MCP server source (TypeScript)
+│   ├── build/
+│   │   └── index.js          # Compiled output — run this
+│   ├── package.json
+│   └── tsconfig.json
 ├── postman/
 │   ├── collections/
 │   │   └── On This Day in Art/
@@ -186,7 +191,7 @@ If you want to build something similar, here's the pattern:
 
 ## The MCP server
 
-`server/met_mcp_server.py` exposes the Met Museum API as tools for AI agents via the [Model Context Protocol](https://modelcontextprotocol.io/). This lets Postman Agent Mode (or Claude Desktop, VS Code, Cursor) query the Met collection using natural language.
+`server/src/index.ts` exposes the Met Museum API as tools for AI agents via the [Model Context Protocol](https://modelcontextprotocol.io/). This lets Postman Agent Mode, Claude Code in VS Code, Claude Desktop, Cursor, or any MCP-compatible host query the Met collection using natural language.
 
 | Tool | What it does |
 |---|---|
@@ -195,26 +200,56 @@ If you want to build something similar, here's the pattern:
 | `get_departments` | List all Met departments with IDs |
 | `search_artworks` | Keyword search across the collection |
 
-### Setup
+### A note on local vs. remote
+
+This server uses **stdio transport** — it runs as a process on your local machine. Any MCP host on the same machine can connect to it. It is not accessible over the network by default. To make it remotely accessible (e.g., for a hosted Postman Agent Mode or a teammate), you would need to redeploy it with HTTP transport and host it somewhere publicly reachable.
+
+### Build and run
 
 ```bash
-pip install mcp httpx
-python server/met_mcp_server.py
+cd server
+npm install       # first time only
+npm run build     # compile TypeScript → build/index.js
+npm start         # start the server
 ```
 
-### Configure in Postman Agent Mode
+The server starts silently and waits for connections — no output means it's working. Stop it with `Ctrl+C`.
 
-1. Open Postman → Agent Mode (the chat icon in the sidebar)
-2. Click the MCP server icon → **Add server**
-3. Choose **Local (stdio)**:
-   - Command: `python`
-   - Args: `/path/to/otdia/server/met_mcp_server.py`
-4. Try prompts like:
+To run without a build step during development:
+
+```bash
+npm run dev       # runs src/index.ts directly via tsx
+```
+
+### Connect to Claude Code in VS Code
+
+Run this once in your terminal from anywhere in the project:
+
+```bash
+claude mcp add on-this-day-in-art node /path/to/otdia/server/build/index.js
+```
+
+Then restart your Claude Code session. With the server running, Claude Code can call the Met API tools directly — ask it things like:
+- *"What artworks are in the Met collection for today's date?"*
+- *"Search for artworks tagged with flowers in European Paintings"*
+- *"List all the Met departments"*
+
+### Connect to Postman Agent Mode
+
+1. Start the server locally (`npm start` in the `server/` directory)
+2. Open Postman → Agent Mode (chat icon, bottom-left)
+3. Click the MCP server icon → **Add server** → **Local (stdio)**
+4. Set:
+   - **Command:** `node`
+   - **Args:** `/path/to/otdia/server/build/index.js`
+5. Try prompts like:
    - *"What artworks in the Asian Art department are connected to today?"*
    - *"Give me the details for object 45734"*
-   - *"List all the Met departments"*
+   - *"Search for Japanese woodblock prints"*
 
-### Configure in Claude Desktop
+> **Note:** Postman Agent Mode connects to your locally running server. If you're using Postman's cloud-based Agent Mode, the server still needs to be running on your local machine and reachable via the Postman desktop app.
+
+### Connect to Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -222,12 +257,14 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "on-this-day-in-art": {
-      "command": "python",
-      "args": ["/path/to/otdia/server/met_mcp_server.py"]
+      "command": "node",
+      "args": ["/path/to/otdia/server/build/index.js"]
     }
   }
 }
 ```
+
+Restart Claude Desktop after saving. The server starts automatically when Claude Desktop launches.
 
 ---
 

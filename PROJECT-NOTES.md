@@ -187,18 +187,65 @@ MCP Server (TypeScript, stdio transport)
 
 ---
 
-## Possible documentation gaps you noticed
+## How the pieces fit together — MCP server approaches
 
-Use these as talking points — shows you were *actually* using the product:
+Two ways to create an MCP server, and when each makes sense:
 
-- **MCP server local setup** — the stdio vs HTTP distinction isn't obvious; docs could be clearer on when to use which
-- **Variable chaining in collections** — the pattern of saving values from test scripts into collection variables for downstream requests is powerful but not prominently documented
-- **Model comparison workflow** — the UI supports comparing models but the docs don't have a clear "how to evaluate models" guide
-- **Agent Mode prompting tips** — what kinds of natural language prompts work well? What doesn't? There's room for a guide here
-- **Who is Postman AI for?** — the docs don't make it explicit at the top level that Postman AI is about *consuming and building with* existing APIs, not *designing* new ones. The design tools (OpenAPI specs, mock servers) are a separate workflow for a different audience. A landing page or overview that orients users — "are you building an API or using one?" — would reduce confusion
-- **Ask AI vs. Agent Mode** — these are two different things and the docs don't clearly distinguish them. Ask AI (right sidebar) is a passive copilot — it answers questions and helps you write. Agent Mode is active — it takes actions inside Postman on your behalf. The difference matters because they have very different capabilities and expectations. A user who thinks Ask AI can "do things" will be confused; a user who doesn't know Agent Mode exists will miss the most powerful feature
-- **What can Ask AI actually do?** — the boundaries of Ask AI aren't documented clearly. Can it run requests? Can it read your collection and reason about it? Can it help you build something end-to-end? Right now users have to discover this by trial and error
-- **Dotfiles not visible in the Files panel** — Postman's file viewer doesn't show hidden files (anything starting with `.`), so `.gitignore`, `.env`, `.vercel` etc. are invisible. There's no toggle to show them. Users who rely on the Files panel to manage their project will be confused when these files appear to be missing. A "show hidden files" option, or at least a note in the docs that dotfiles are hidden, would prevent this
-- **MCP server vs. web backend confusion** — it's not obvious to new users that an MCP server is for AI agents, not for web apps. A user building a website might reasonably wonder if they should use Postman's "Generate MCP server" feature as their backend. The docs could benefit from a clear orientation: "MCP servers are consumed by AI agents; if you're building a web app, you want a regular API or serverless function instead"
-- **File search only matches filenames, not file contents** — the search field in the Files panel searches by filename only. Users who expect full-text search (e.g. searching for a variable name, a URL, or a string across all files in the project) will get no results and assume the file doesn't exist. Either a content search option or a clear label like "Search by filename" would prevent confusion
-- **No word wrap in editors** — Postman's script and body editors don't have a word wrap toggle. Long lines require horizontal scrolling. The only workaround for JSON bodies is the Beautify button, which reformats the whole document. A word wrap option (like most code editors have) would improve readability for long strings, prompts, and URLs
+**1. Generate from a Postman collection (Postman MCP Generator)**
+The intended workflow for most projects:
+- Design requests in a collection — every endpoint, every permutation a developer would find useful
+- Use the MCP Generator to turn those requests into MCP tools automatically
+- The collection serves two audiences at once: humans who explore and test it, and AI agents who call the generated tools
+
+```
+Design requests in a collection
+        │
+        ├── Humans use it to explore and test the API
+        └── Postman generates an MCP server from it
+                │
+                └── AI agents call the tools
+```
+
+Best for: well-defined REST APIs with discrete endpoints, where each request maps cleanly to a tool.
+
+**2. Build by hand (TypeScript/Python MCP server)**
+Necessary when you need composite logic that can't live in a single request — for example, `get_artworks_for_today` which searches the Met API, then loops through up to 50 results fetching details and filtering for ones with images. That's multiple HTTP calls with conditional logic — no single Postman request can express it.
+
+Best for: custom tools that combine multiple API calls, apply filtering or transformation, or encode a specific use case rather than a raw endpoint.
+
+**The OTDIA project illustrates both:**
+- The raw Met API endpoints (search, get object, list departments) could be generated from a collection
+- `get_artworks_for_today` had to be hand-crafted because it's composite logic
+
+**The broader principle:**
+For a large API, the right approach is probably both — generate the server from the collection to cover the full API surface, then extend it by hand for any composite tools that represent specific high-value use cases.
+
+---
+
+## First impressions and open questions from using the product
+
+These are early observations from a single hands-on session — not conclusions. Worth raising as hypotheses in conversation with the team, who will have more context on intent and usage patterns.
+
+- **MCP server local setup** — setting up a local stdio server felt like it required some background knowledge to get right. I wonder if the distinction between stdio and HTTP/SSE transport could be surfaced earlier — maybe with a simple decision guide for when to use which. Could be that more experienced users find this obvious, but it tripped me up initially.
+
+- **Variable chaining in collections** — passing data between requests via collection variables felt like a powerful pattern, but I found it mostly by experimenting rather than following docs. It might be worth exploring whether this workflow deserves more prominent treatment, or whether users are finding it through other paths.
+
+- **Model comparison workflow** — the UI makes it easy to run the same prompt against different models, which felt like a natural evaluation use case. I didn't find a guide specifically for this — curious whether that's intentional (leave it open-ended) or a gap worth filling.
+
+- **Agent Mode prompting tips** — I found myself experimenting with how to phrase requests to get the best results from Agent Mode. I'd be curious whether usage data shows common patterns — if so, a "getting started with prompting" guide might reduce the trial-and-error period for new users.
+
+- **Which Postman AI tool for which job?** — as a first-time user, I wasn't always sure whether to reach for Ask AI, Agent Mode, Collections, or the MCP Generator for a given task. A "which tool for which job" orientation — especially for the AI features — might help users find the right starting point faster. Worth validating whether other new users share this confusion or whether the current docs address it in ways I missed.
+
+- **Collections vs. MCP servers for API exploration** — I noticed that Collections serve the human-driven exploration workflow well (try requests, validate responses, figure out the right params) while MCP servers serve the AI-driven workflow (an agent calls the API directly while building). I'm not sure the docs connect these two explicitly — it might be worth a diagram or guide that shows when each approach fits.
+
+- **Ask AI vs. Agent Mode** — these felt meaningfully different in practice (Ask AI felt more conversational; Agent Mode felt more action-oriented) but I wasn't sure I fully understood the intended distinction from the docs alone. Curious whether users commonly conflate them, and whether a clearer framing upfront would help.
+
+- **Ask AI capabilities** — I was surprised by how much Ask AI could do — it built a collection from a plain-language description of a project, which I didn't expect. I wonder if users are consistently discovering this capability or if it's underleveraged because the docs frame Ask AI more narrowly. Could be an opportunity to show more ambitious use cases.
+
+- **Who is Postman AI for?** — I noticed that the AI features feel oriented toward consuming and building with existing APIs, while the design tools (OpenAPI specs, mock servers) serve a different workflow. I'm not sure the top-level navigation makes this distinction obvious. Could be worth a quick orientation for users who aren't sure which part of Postman applies to them — but this may already be addressed somewhere I didn't see.
+
+- **AI credit scope** — I exhausted my Enterprise trial credits in an afternoon session, partly because I was using Ask AI for tasks beyond Postman-specific work (exploring concepts, building surrounding app code). I'm curious whether the intended use is narrower — focused on Postman-native tasks like writing scripts and building requests — and if so, whether guidance on credit-efficient usage would help users get more out of their allocation.
+
+- **Enterprise trial credit limits** — I didn't find clear documentation on how trial credits compare to a paid Enterprise plan. As someone evaluating the product, I found it hard to know whether my experience was representative of what a paid account would feel like. A simple credit breakdown by plan — even approximate — might help prospective customers evaluate more confidently. Worth checking whether this info exists somewhere I didn't find it.
+
+- **Postman AI alongside other coding tools** — once I moved from API exploration in Postman to building the actual web app, I naturally switched to VS Code and Claude Code. I wonder if there's an opportunity to document this handoff more explicitly — showing how Postman fits into a broader development workflow rather than positioning it as the only tool needed. This might reflect a deliberate product strategy I'm not fully aware of yet.
