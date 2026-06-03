@@ -13,7 +13,10 @@
       "mcp__on-this-day-in-art__get_gemini_summary",
       "Bash(git add *)",
       "Bash(git push *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(python3 -c \"import yaml; print\\('yaml available'\\)\")",
+      "Bash(python3 convert_to_json.py)",
+      "Bash(python3 -c ' *)"
     ],
     "additionalDirectories": [
       "/Users/jenniferhasegawa/.claude"

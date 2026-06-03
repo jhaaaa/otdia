@@ -13,7 +13,7 @@ description: |-
 
   ### Response
   Returns `{ total, objectIDs }` — the total count of matches and an array of object IDs.
-url: https://collectionapi.metmuseum.org/public/collection/v1/search
+url: https://collectionapi.metmuseum.org/public/collection/v1/search?q={{searchQuery}}&hasImages=true&departmentId={{departmentId}}
 method: GET
 queryParams:
   q: "{{searchQuery}}"

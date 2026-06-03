@@ -1,7 +1,10 @@
 $kind: collection
+name: On This Day in Art
+description: 5 requests for exploring The Met Museum collection and generating AI-powered artwork summaries.
 variables:
-  departments: ""
+  geminiApiKey: ""
   randomObjectId: ""
-  artworkData: ""
-  departmentId: ""
   searchUsed: ""
+  artworkData: ""
+  geminiSummary: ""
+  departmentId: ""

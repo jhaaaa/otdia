@@ -72,4 +72,18 @@ scripts:
           raw: JSON.stringify(bodyObj)
       });
     language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Gemini returned a summary", function () {
+          const json = pm.response.json();
+          const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+          pm.expect(text).to.be.a("string").with.length.above(0);
+          pm.collectionVariables.set("geminiSummary", text);
+          console.log("Chillomena Punk says:\n\n" + text);
+      });
+    language: text/javascript
 order: 4000

@@ -18,6 +18,9 @@ server/build/
 *.environment.json
 postman/environments/
 
+# Postman importable JSON — derived from YAML source files via postman/convert_to_json.py
+*.postman_collection.json
+
 # macOS
 .DS_Store
 

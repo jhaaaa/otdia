@@ -20,9 +20,6 @@ description: |-
   - `objectURL` — Link to the Met's page for this artwork
 url: https://collectionapi.metmuseum.org/public/collection/v1/objects/{{randomObjectId}}
 method: GET
-body:
-  type: text
-  content: ""
 scripts:
   - type: afterResponse
     code: |-

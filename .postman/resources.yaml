@@ -2,8 +2,7 @@ workspace:
   id: 0e6f9ab8-bcae-4eb8-82c3-25fdf14255f9
 
 localResources:
-  collections:
-    - ../postman/collections/On This Day in Art
+  collections: []
   environments:
     - ../postman/environments/On This Day in Art.environment.yaml
 
@@ -11,6 +10,6 @@ localResources:
 
 cloudResources:
   collections:
-    ../postman/collections/On This Day in Art: 1274309-d1f1cded-d9eb-4541-8536-d0f34fba337c
+    ../postman/collections/On This Day in Art: fbac053d-8738-4814-8fb6-a254e4186475
   environments:
     ../postman/environments/On This Day in Art.environment.yaml: 1274309-368d5886-2204-431a-b1e5-4ed5d8d73293

@@ -2,42 +2,28 @@ $kind: http-request
 description: |-
   ## On This Day in Art
 
-  Fetches artworks from The Metropolitan Museum of Art collection for a given department that have images available.
+  Searches The Metropolitan Museum of Art collection for artworks with images, using today's date as the keyword. Uses a three-tier fallback to ensure a result is always returned.
 
   ### The Met Museum API
   Base URL: https://collectionapi.metmuseum.org/public/collection/v1/
 
   ### Variables
-  - `departmentId` — The Met department ID (default: 11 = European Paintings). See /departments endpoint for full list.
-  - `dateBegin` / `dateEnd` — Set automatically by the pre-request script to span all years.
-  - `todayLabel` — Human-readable date label (e.g., "June 2"), set by pre-request script.
+  - `todayLabel` — Human-readable date label (e.g., "June 2"), set automatically by the pre-request script.
+  - `searchQuery` — The active search term, updated by the pre-request script each time the request runs.
 
-  ### Common Department IDs
-  | ID | Department |
-  |----|----------|
-  | 1  | American Decorative Arts |
-  | 3  | Ancient Near Eastern Art |
-  | 4  | Arms and Armor |
-  | 6  | Asian Art |
-  | 9  | Drawings and Prints |
-  | 10 | Egyptian Art |
-  | 11 | European Paintings |
-  | 12 | European Sculpture and Decorative Arts |
-  | 13 | Greek and Roman Art |
-  | 17 | Medieval Art |
-  | 21 | Modern Art |
+  ### Fallback tiers
+  1. Full date match — e.g. "June 2"
+  2. Month only — e.g. "June"
+  3. Full collection — wildcard search (`*`)
 
   ### Response
   Returns `{ total, objectIDs }` — use the objectIDs to fetch individual artwork details from:
   `GET /objects/{objectID}`
-url: https://collectionapi.metmuseum.org/public/collection/v1/search
+url: https://collectionapi.metmuseum.org/public/collection/v1/search?q={{searchQuery}}&hasImages=true
 method: GET
 queryParams:
   q: "{{searchQuery}}"
   hasImages: "true"
-  departmentId: "{{departmentId}}"
-  dateBegin: "{{dateBegin}}"
-  dateEnd: "{{dateEnd}}"
 scripts:
   - type: beforeRequest
     code: |-
@@ -57,12 +43,7 @@ scripts:
       pm.variables.set("monthLabel", monthLabel);
       pm.variables.set("searchQuery", todayLabel); // start with full "June 2" search
 
-      // Default departmentId to 11 (European Paintings) if not already set
-      if (!pm.variables.get("departmentId")) {
-          pm.variables.set("departmentId", 11);
-      }
-
-      console.log(`Searching for: "${todayLabel}" | Department: ${pm.variables.get("departmentId")}`);
+      console.log(`Searching for: "${todayLabel}"`);
     language: text/javascript
   - type: afterResponse
     code: |-
@@ -71,7 +52,6 @@ scripts:
       });
 
       const json = pm.response.json();
-      const departmentId = pm.variables.get("departmentId");
       const todayLabel = pm.variables.get("todayLabel");   // e.g. "June 2"
       const monthLabel = pm.variables.get("monthLabel");   // e.g. "June"
 
@@ -96,7 +76,7 @@ scripts:
       } else {
           // Fallback 1: month only e.g. "June"
           console.log(`No results for "${todayLabel}" — trying month-only: "${monthLabel}"`);
-          const monthUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${encodeURIComponent(monthLabel)}&hasImages=true&departmentId=${departmentId}`;
+          const monthUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${encodeURIComponent(monthLabel)}&hasImages=true`;
 
           pm.sendRequest(monthUrl, function (err, monthRes) {
               if (!err && monthRes) {
@@ -111,18 +91,18 @@ scripts:
                   }
               }
 
-              // Fallback 2: department only
-              console.log(`No results for "${monthLabel}" — falling back to department-only`);
-              const deptUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=*&hasImages=true&departmentId=${departmentId}`;
+              // Fallback 2: full collection wildcard
+              console.log(`No results for "${monthLabel}" — falling back to full collection`);
+              const allUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=*&hasImages=true`;
 
-              pm.sendRequest(deptUrl, function (err2, deptRes) {
-                  if (!err2 && deptRes) {
-                      const deptJson = deptRes.json();
-                      pm.test("Fallback: department results found", function () {
-                          pm.expect(deptJson.total).to.be.above(0);
+              pm.sendRequest(allUrl, function (err2, allRes) {
+                  if (!err2 && allRes) {
+                      const allJson = allRes.json();
+                      pm.test("Fallback: collection results found", function () {
+                          pm.expect(allJson.total).to.be.above(0);
                       });
-                      if (deptJson.total > 0 && deptJson.objectIDs) {
-                          setResult(pickRandom(deptJson.objectIDs), "department-only");
+                      if (allJson.total > 0 && allJson.objectIDs) {
+                          setResult(pickRandom(allJson.objectIDs), "collection");
                       }
                   }
               });
