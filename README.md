@@ -1,6 +1,6 @@
 # On This Day in Art
 
-A single-page web app that surfaces a random artwork from the [Metropolitan Museum of Art Open Access API](https://metmuseum.github.io/) connected to today's date — with a deadpan AI commentary by **Chillomena Punk**, a confidently misinformed art critic powered by Gemini.
+A single-page web app that surfaces a random artwork from the [Metropolitan Museum of Art Open Access API](https://metmuseum.github.io/) connected to today's date — with a deadpan AI commentary by **Chillomena Punk**, a confidently misinformed art critic powered by Gemini and inspired by Philomena Cunk.
 
 Live at **[onthisdayin.art](https://onthisdayin.art)**
 
@@ -41,16 +41,17 @@ Rendered in browser as an art card (image + metadata + commentary)
 ```
 otdia/
 ├── website/
-│   ├── index.html        # Single-page app shell
-│   ├── app.js            # All client-side logic: search, fetch, render
-│   └── style.css         # Layout and typography
+│   ├── index.html            # Single-page app shell
+│   ├── app.js                # All client-side logic: search, fetch, render
+│   ├── style.css             # Layout and typography
+│   └── chillomena-punk.png   # Placeholder image (shown before artwork loads)
 ├── api/
 │   └── summary.js        # Vercel serverless function — calls Gemini API
 ├── server/
 │   ├── src/
 │   │   └── index.ts          # MCP server source (TypeScript)
 │   ├── build/
-│   │   └── index.js          # Compiled output — run this
+│   │   └── index.js          # Compiled output — run this (gitignored)
 │   ├── package.json
 │   └── tsconfig.json
 ├── postman/
@@ -64,7 +65,7 @@ otdia/
 │   └── environments/
 │       └── On This Day in Art.environment.yaml
 ├── vercel.json           # Routes /api/* to serverless functions, /* to website/
-└── PROJECT-NOTES.md      # Running notes on Postman features and doc gaps
+└── PROJECT-NOTES.md      # First impressions and open questions from using the product
 ```
 
 ---
@@ -205,10 +206,16 @@ If you want to build something similar, here's the pattern:
 | `search_artworks` | Keyword search across the collection |
 | `get_gemini_summary` | Generate a Chillomena Punk commentary via Gemini (requires `GEMINI_API_KEY`) |
 
-The `get_gemini_summary` tool requires a Gemini API key. Set it as an environment variable before starting the server:
+The `get_gemini_summary` tool requires a Gemini API key. Either export it in your shell:
 
 ```bash
 export GEMINI_API_KEY=your_key_here
+```
+
+Or create a `.env` file in the `server/` directory:
+
+```
+GEMINI_API_KEY=your_key_here
 ```
 
 Get a free key at [aistudio.google.com](https://aistudio.google.com). The other four tools work without it.
