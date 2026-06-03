@@ -90,31 +90,6 @@ header h1 em {
   flex-wrap: wrap;
 }
 
-.config-bar label {
-  font-family: 'Instrument Sans', sans-serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(26,20,16,0.5);
-}
-
-.config-bar select {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 0.95rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(26,20,16,0.2);
-  background: var(--cream);
-  color: var(--ink);
-  border-radius: 2px;
-  cursor: pointer;
-  min-width: 200px;
-}
-
-.config-bar select:focus {
-  outline: none;
-  border-color: var(--gold);
-}
-
 .btn {
   font-family: 'Instrument Sans', sans-serif;
   font-size: 0.75rem;
@@ -276,12 +251,22 @@ main {
 }
 
 .punk-label {
-  font-family: 'Instrument Sans', sans-serif;
-  font-size: 0.6rem;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1rem;
+  font-weight: 400;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
+  color: var(--ink);
   margin-bottom: 0.5rem;
+}
+
+.punk-block:has(.punk-loading) .punk-star {
+  display: inline-block;
+  animation: punkPulse 2s ease-in-out infinite;
+}
+
+@keyframes punkPulse {
+  0%, 100% { color: var(--ink); }
+  50%       { color: var(--gold); }
 }
 
 .punk-text {

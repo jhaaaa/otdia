@@ -15,9 +15,9 @@ User visits onthisdayin.art
         │
         ▼
 website/app.js — three-tier date search
-  Tier 1: search Met API for "June 3"  (exact date)
-  Tier 2: search Met API for "June"    (month fallback)
-  Tier 3: search Met API for "*"       (full collection fallback)
+  Tier 1: "June 3"  → exact date match; if 0 results…
+  Tier 2: "June"    → month-only fallback; if 0 results…
+  Tier 3: "*"       → full collection (always finds something)
         │
         ▼
 Met Museum Open Access API (public, no auth required)
@@ -129,11 +129,11 @@ pm.test("Pick a random department and set departmentId", function () {
 
 ### 4. The three-tier date fallback — in Postman and in production
 
-The search logic is the same in both the Postman collection and `app.js`:
+The Met's API searches text metadata — titles, dates, tags, descriptions — not a calendar. That means searching for `"June 3"` finds artworks whose metadata happens to contain that string. The three-tier fallback handles the reality that some dates return few or no matches:
 
-1. Search for the full date: `"June 3"`
-2. If no results, fall back to the month: `"June"`
-3. If still no results, fall back to the full collection: `"*"`
+1. **Tier 1 — exact date:** search for `"June 3"`. If results exist, done.
+2. **Tier 2 — month fallback:** if Tier 1 returns 0, search for `"June"`. The UI reports both counts: *Found 0 matching "June 3". Found 347 matching "June".*
+3. **Tier 3 — full collection:** if Tier 2 also returns 0, search for `"*"`. The UI reports: *Found 0 matching "June 3" or "June". Showing 1 randomly selected.*
 
 In the Postman collection, the fallback is implemented using `pm.sendRequest()` inside the test script. In `app.js`, it's three sequential `await fetch()` calls. Building and validating the logic in Postman first made it straightforward to translate to production code.
 

@@ -84,9 +84,9 @@ function renderCard(artwork, searchUsed) {
       <h2>${artwork.title || 'Untitled'}</h2>
       <div class="art-card-meta">${artwork.artistDisplayName || 'Artist unknown'}</div>
       <div class="art-card-date">${artwork.objectDate || ''}</div>
-      <div class="cunk-block">
-        <div class="cunk-label">✦ Punk on Art</div>
-        <div class="cunk-text cunk-loading" id="cunk-${artwork.objectID}">Consulting the oracle…</div>
+      <div class="punk-block">
+        <div class="punk-label"><span class="punk-star">✦</span> Punk on Art</div>
+        <div class="punk-text punk-loading" id="punk-${artwork.objectID}">Consulting Chillomena Punk…</div>
       </div>
       ${artwork.objectURL ? `<a class="art-card-link" href="${artwork.objectURL}" target="_blank" rel="noopener">View at The Met →</a>` : ''}
     </div>
@@ -110,17 +110,17 @@ function renderCard(artwork, searchUsed) {
 
   fetchCunkSummary(artworkData, searchUsed)
     .then(summary => {
-      const el = document.getElementById(`cunk-${artwork.objectID}`);
+      const el = document.getElementById(`punk-${artwork.objectID}`);
       if (el) {
         el.textContent = summary;
-        el.classList.remove('cunk-loading');
+        el.classList.remove('punk-loading');
       }
     })
     .catch(err => {
-      const el = document.getElementById(`cunk-${artwork.objectID}`);
+      const el = document.getElementById(`punk-${artwork.objectID}`);
       if (el) {
-        el.textContent = 'Philomena is unavailable for comment at this time.';
-        el.classList.remove('cunk-loading');
+        el.textContent = 'Chillomena Punk is unavailable for comment at this time.';
+        el.classList.remove('punk-loading');
       }
     });
 }
@@ -148,14 +148,15 @@ async function loadArt(month, day, limit = 1, showMatchStatus = true) {
     // Tier 1: exact date match e.g. "June 2"
     let result = await searchMet(searchTodayLabel);
     let searchUsed = 'exact-date';
-    let matchedTerm = searchTodayLabel;
+    const tier1Total = result.total || 0;
+    let tier2Total = 0;
 
     if (!result.total || !result.objectIDs) {
       // Tier 2: month match e.g. "June"
       setStatus(`<span class="spinner"></span> No exact match — trying <em>${searchMonthLabel}</em>…`);
       result = await searchMet(searchMonthLabel);
       searchUsed = 'month';
-      matchedTerm = searchMonthLabel;
+      tier2Total = result.total || 0;
     }
 
     if (!result.total || !result.objectIDs) {
@@ -163,7 +164,6 @@ async function loadArt(month, day, limit = 1, showMatchStatus = true) {
       setStatus(`<span class="spinner"></span> Falling back to full collection…`);
       result = await searchMet('*');
       searchUsed = 'collection';
-      matchedTerm = 'the full collection';
     }
 
     if (!result.total || !result.objectIDs) {
@@ -199,7 +199,15 @@ async function loadArt(month, day, limit = 1, showMatchStatus = true) {
     }
 
     if (showMatchStatus) {
-      setStatus(`Found ${result.total.toLocaleString()} artworks with metadata matching <strong>"${matchedTerm}"</strong>. Showing 1 randomly selected.`);
+      let statusMsg;
+      if (searchUsed === 'exact-date') {
+        statusMsg = `Found ${result.total.toLocaleString()} artworks with metadata matching <strong>"${searchTodayLabel}"</strong>. Showing 1 randomly selected.`;
+      } else if (searchUsed === 'month') {
+        statusMsg = `Found 0 artworks with metadata matching <strong>"${searchTodayLabel}"</strong>. Found ${tier2Total.toLocaleString()} artworks with metadata matching <strong>"${searchMonthLabel}"</strong>. Showing 1 randomly selected.`;
+      } else {
+        statusMsg = `Found 0 artworks with metadata matching <strong>"${searchTodayLabel}"</strong> or <strong>"${searchMonthLabel}"</strong>. Showing 1 randomly selected.`;
+      }
+      setStatus(statusMsg);
     } else {
       setStatus(`Showing 1 randomly selected artwork.`);
     }
