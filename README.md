@@ -59,7 +59,8 @@ otdia/
 │   │       ├── Get Departments.request.yaml
 │   │       ├── Get Art by Department and Date.request.yaml
 │   │       ├── Get Artwork Detail.request.yaml
-│   │       └── Get Gemini Summary.request.yaml
+│   │       ├── Get Gemini Summary.request.yaml
+│   │       └── Search Artworks.request.yaml
 │   └── environments/
 │       └── On This Day in Art.environment.yaml
 ├── vercel.json           # Routes /api/* to serverless functions, /* to website/
@@ -74,7 +75,7 @@ This project uses Postman across the full development lifecycle. Here's how each
 
 ### 1. Exploring the API with requests
 
-Before writing any code, the four requests in the collection were used to explore the Met Museum API interactively in Postman:
+Before writing any code, the requests in the collection were used to explore the Met Museum API interactively in Postman:
 
 | Request | What it does |
 |---|---|
@@ -82,12 +83,13 @@ Before writing any code, the four requests in the collection were used to explor
 | **Get Art by Department and Date** | Searches for artworks matching today's date, with a three-tier fallback |
 | **Get Artwork Detail** | Fetches full metadata for a single artwork by ID |
 | **Get Gemini Summary** | Sends artwork metadata to Gemini and returns a Chillomena Punk commentary |
+| **Search Artworks** | Keyword search across the full collection by artist, theme, medium, or culture |
 
 **Why this matters:** Sending requests in Postman before writing code lets you see exactly what the API returns, understand the shape of the data, and catch edge cases (like artworks with no images) before they become bugs.
 
 ### 2. Chaining requests with collection variables
 
-The four requests are designed to run in sequence. Each request's test script stores data that the next request needs:
+Four of the five requests are designed to run in sequence. Each request's test script stores data that the next request needs:
 
 ```
 Get Departments
@@ -104,6 +106,8 @@ Get Gemini Summary
   └─ pre-request script reads: artworkData
   └─ builds and sends the Gemini prompt
 ```
+
+**Search Artworks** is standalone — it takes a keyword query and returns matching object IDs, but does not depend on or feed into the date-based workflow above.
 
 **Why this matters:** `pm.collectionVariables.set()` and `pm.collectionVariables.get()` let you pass data between requests without hardcoding IDs. This mirrors exactly how the production app works — and lets you run the full pipeline in Collection Runner with one click.
 
@@ -200,6 +204,14 @@ If you want to build something similar, here's the pattern:
 | `get_departments` | List all Met departments with IDs |
 | `search_artworks` | Keyword search across the collection |
 | `get_gemini_summary` | Generate a Chillomena Punk commentary via Gemini (requires `GEMINI_API_KEY`) |
+
+The `get_gemini_summary` tool requires a Gemini API key. Set it as an environment variable before starting the server:
+
+```bash
+export GEMINI_API_KEY=your_key_here
+```
+
+Get a free key at [aistudio.google.com](https://aistudio.google.com). The other four tools work without it.
 
 ### A note on local vs. remote
 
