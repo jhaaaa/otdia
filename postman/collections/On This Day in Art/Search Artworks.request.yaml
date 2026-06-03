@@ -1,0 +1,52 @@
+$kind: http-request
+description: |-
+  ## Search Artworks
+
+  Searches The Metropolitan Museum of Art collection by keyword, artist name, theme, medium, or culture. Returns a list of matching object IDs and basic artwork info.
+
+  ### Variables
+  - `searchQuery` — The keyword or phrase to search for (e.g. "flowers", "Rembrandt", "ukiyo-e"). Set this as a collection variable before running.
+  - `departmentId` — Optional. Filter results to a specific department. Set by **Get Departments** or manually.
+
+  ### Usage
+  Use the returned `objectIDs` with **Get Artwork Detail** to fetch full metadata for any result. This request is standalone — it does not feed into the main date-based workflow.
+
+  ### Response
+  Returns `{ total, objectIDs }` — the total count of matches and an array of object IDs.
+url: https://collectionapi.metmuseum.org/public/collection/v1/search
+method: GET
+queryParams:
+  q: "{{searchQuery}}"
+  hasImages: "true"
+  departmentId: "{{departmentId}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Ensure searchQuery is set before running
+      const query = pm.collectionVariables.get("searchQuery") || pm.variables.get("searchQuery");
+      if (!query) {
+          console.warn("searchQuery is not set — set it as a collection variable before running this request.");
+      } else {
+          console.log(`Searching Met collection for: "${query}"`);
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response has total and objectIDs", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("total");
+          const query = pm.collectionVariables.get("searchQuery") || pm.variables.get("searchQuery");
+          console.log(`Found ${json.total} artworks matching "${query}"`);
+
+          if (json.total > 0 && json.objectIDs) {
+              // Store the first result so Get Artwork Detail can be run directly after
+              pm.collectionVariables.set("randomObjectId", json.objectIDs[0]);
+              console.log(`Set randomObjectId to ${json.objectIDs[0]} — run Get Artwork Detail to see full metadata.`);
+          }
+      });
+    language: text/javascript
+order: 5000

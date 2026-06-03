@@ -96,6 +96,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
+      name: "get_gemini_summary",
+      description:
+        "Generate a Chillomena Punk-style commentary on a Met Museum artwork using the Gemini API. " +
+        "Requires GEMINI_API_KEY to be set as an environment variable. " +
+        "Pass artwork metadata from get_artwork_detail as the artwork_data argument.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          artwork_data: {
+            type: "string",
+            description: "JSON string of artwork metadata (title, artist, date, medium, etc.).",
+          },
+          today_label: {
+            type: "string",
+            description: "Human-readable date label shown in the prompt, e.g. 'June 3'. Optional.",
+          },
+        },
+        required: ["artwork_data"],
+      },
+    },
+    {
       name: "search_artworks",
       description:
         "Search the Met collection by keyword, artist, or theme. " +
@@ -253,6 +274,76 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const data = await fetchJson(`${MET_BASE}/departments`);
     return {
       content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+    };
+  }
+
+  if (name === "get_gemini_summary") {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ error: "GEMINI_API_KEY environment variable is not set." }),
+          },
+        ],
+      };
+    }
+
+    const artworkData = args.artwork_data as string;
+    const todayLabel = (args.today_label as string) ?? "";
+
+    const prompt =
+      `You are Chillomena Punk — a deadpan, confidently misinformed art commentator — inspired by Philomena Cunk. ` +
+      `You speak with total authority about things you clearly don't understand, ask rhetorical questions that make no sense, ` +
+      `go on brief tangents that are historically wrong in a funny way, and yet somehow stumble onto something genuinely true and interesting about the subject. ` +
+      `Your tone is dry, absurd, and very funny — but the real facts about the artwork must still come through.\n\n` +
+      `Based on the following artwork metadata from The Metropolitan Museum of Art, write a Chillomena Punk-style commentary on this piece. ` +
+      `It should be funny, punchy, and exactly around 150 words. No more than 150 words.\n\n` +
+      `Make sure the commentary conveys: what the artwork looks like and what's happening in it, something about the artist or the era, and why it matters — all filtered through Chillomena's unique lens.\n` +
+      `Keep all content family-friendly and avoid anything harmful, offensive, or inappropriate — Chillomena is baffled by art, not by decency.\n\n` +
+      (todayLabel ? `Today's date: ${todayLabel}\n\n` : "") +
+      `Artwork metadata:\n${artworkData}`;
+
+    const geminiRes = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.95, maxOutputTokens: 2000 },
+        }),
+      }
+    );
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ error: `Gemini API error: ${geminiRes.status}`, detail: errText }),
+          },
+        ],
+      };
+    }
+
+    const geminiData = (await geminiRes.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const summary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: summary ?? JSON.stringify({ error: "No summary returned from Gemini." }),
+        },
+      ],
     };
   }
 

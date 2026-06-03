@@ -199,6 +199,7 @@ If you want to build something similar, here's the pattern:
 | `get_artwork_detail` | Full metadata for a single artwork |
 | `get_departments` | List all Met departments with IDs |
 | `search_artworks` | Keyword search across the collection |
+| `get_gemini_summary` | Generate a Chillomena Punk commentary via Gemini (requires `GEMINI_API_KEY`) |
 
 ### A note on local vs. remote
 

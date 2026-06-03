@@ -10,11 +10,13 @@
       "mcp__on-this-day-in-art__get_artwork_detail",
       "mcp__on-this-day-in-art__get_departments",
       "mcp__on-this-day-in-art__search_artworks",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('hooks', 'NO HOOKS KEY'\\), indent=2\\)\\)\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('hooks', {}\\), indent=2\\)\\)\")",
-      "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/jenniferhasegawa/.claude/settings.json'\\)\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
-      "Bash(git -C /Users/jenniferhasegawa/src/otdia add .claude/settings.json)",
-      "Bash(git -C /Users/jenniferhasegawa/src/otdia status)"
+      "mcp__on-this-day-in-art__get_gemini_summary",
+      "Bash(git -C /Users/jenniferhasegawa/src/otdia add server/src/index.ts \"postman/collections/On This Day in Art/Search Artworks.request.yaml\" .claude/settings.json README.md)",
+      "Bash(git -C /Users/jenniferhasegawa/src/otdia commit -m ' *)",
+      "Bash(git -C /Users/jenniferhasegawa/src/otdia push)"
+    ],
+    "additionalDirectories": [
+      "/Users/jenniferhasegawa/.claude"
     ]
   }
 }
