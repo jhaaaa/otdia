@@ -10,8 +10,11 @@
       "mcp__on-this-day-in-art__get_artwork_detail",
       "mcp__on-this-day-in-art__get_departments",
       "mcp__on-this-day-in-art__search_artworks",
-      "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('hooks', 'NO HOOKS KEY'\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('hooks', {}\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/jenniferhasegawa/.claude/settings.json'\\)\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "Bash(git -C /Users/jenniferhasegawa/src/otdia add .claude/settings.json)",
+      "Bash(git -C /Users/jenniferhasegawa/src/otdia status)"
     ]
   }
 }
