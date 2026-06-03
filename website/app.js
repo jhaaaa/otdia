@@ -108,7 +108,7 @@ function renderCard(artwork, searchUsed) {
     primaryImage: artwork.primaryImage || ''
   };
 
-  fetchSummary(artworkData, searchUsed)
+  fetchCunkSummary(artworkData, searchUsed)
     .then(summary => {
       const el = document.getElementById(`punk-${artwork.objectID}`);
       if (el) {
