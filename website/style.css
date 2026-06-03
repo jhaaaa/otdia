@@ -169,6 +169,22 @@ main {
   gap: 3rem;
 }
 
+/* Placeholder (shown before artwork loads) */
+.art-placeholder {
+  display: flex;
+  justify-content: center;
+  padding: 0 0 1rem;
+}
+
+.art-placeholder img {
+  max-width: 420px;
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.88;
+  border-radius: 12px;
+}
+
 /* Art card */
 .art-card {
   display: flex;
