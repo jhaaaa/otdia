@@ -11,9 +11,7 @@
       "mcp__on-this-day-in-art__get_departments",
       "mcp__on-this-day-in-art__search_artworks",
       "mcp__on-this-day-in-art__get_gemini_summary",
-      "Bash(git -C /Users/jenniferhasegawa/src/otdia add server/src/index.ts \"postman/collections/On This Day in Art/Search Artworks.request.yaml\" .claude/settings.json README.md)",
-      "Bash(git -C /Users/jenniferhasegawa/src/otdia commit -m ' *)",
-      "Bash(git -C /Users/jenniferhasegawa/src/otdia push)"
+      "Bash(git add *)"
     ],
     "additionalDirectories": [
       "/Users/jenniferhasegawa/.claude"
