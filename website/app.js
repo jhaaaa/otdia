@@ -84,9 +84,9 @@ function renderCard(artwork, searchUsed) {
       <h2>${artwork.title || 'Untitled'}</h2>
       <div class="art-card-meta">${artwork.artistDisplayName || 'Artist unknown'}</div>
       <div class="art-card-date">${artwork.objectDate || ''}</div>
-      <div class="punk-block">
-        <div class="punk-label">✦ Chillomena Punk on Art</div>
-        <div class="punk-text punk-loading" id="punk-${artwork.objectID}">Consulting the oracle…</div>
+      <div class="cunk-block">
+        <div class="cunk-label">✦ Punk on Art</div>
+        <div class="cunk-text cunk-loading" id="cunk-${artwork.objectID}">Consulting the oracle…</div>
       </div>
       ${artwork.objectURL ? `<a class="art-card-link" href="${artwork.objectURL}" target="_blank" rel="noopener">View at The Met →</a>` : ''}
     </div>
@@ -94,7 +94,7 @@ function renderCard(artwork, searchUsed) {
 
   document.getElementById('gallery').appendChild(card);
 
-  // Fetch summary asynchronously and update the card
+  // Fetch Cunk summary asynchronously and update the card
   const artworkData = {
     title: artwork.title || 'Unknown Title',
     artist: artwork.artistDisplayName || 'Unknown Artist',
@@ -110,17 +110,17 @@ function renderCard(artwork, searchUsed) {
 
   fetchCunkSummary(artworkData, searchUsed)
     .then(summary => {
-      const el = document.getElementById(`punk-${artwork.objectID}`);
+      const el = document.getElementById(`cunk-${artwork.objectID}`);
       if (el) {
         el.textContent = summary;
-        el.classList.remove('punk-loading');
+        el.classList.remove('cunk-loading');
       }
     })
     .catch(err => {
-      const el = document.getElementById(`punk-${artwork.objectID}`);
+      const el = document.getElementById(`cunk-${artwork.objectID}`);
       if (el) {
-        el.textContent = 'Chillomena is unavailable for comment at this time.';
-        el.classList.remove('punk-loading');
+        el.textContent = 'Philomena is unavailable for comment at this time.';
+        el.classList.remove('cunk-loading');
       }
     });
 }
