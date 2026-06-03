@@ -15,9 +15,8 @@ document.getElementById('date-month-year').textContent =
   `${monthLabel} · ${now.getFullYear()}`;
 
 // ── Met API helpers ──────────────────────────────────────────────────────────
-async function searchMet(q, deptId) {
+async function searchMet(q) {
   const params = new URLSearchParams({ q, hasImages: 'true' });
-  if (deptId) params.set('departmentId', deptId);
   const res = await fetch(`${MET_BASE}/search?${params}`);
   if (!res.ok) throw new Error(`Met search failed: ${res.status}`);
   return res.json();
@@ -35,23 +34,23 @@ function pickRandom(ids) {
 }
 
 // ── Three-tier date fallback ─────────────────────────────────────────────────
-async function findArtwork(deptId) {
+async function findArtwork() {
   // Tier 1: full date e.g. "June 2"
-  let result = await searchMet(todayLabel, deptId);
+  let result = await searchMet(todayLabel);
   if (result.total > 0 && result.objectIDs) {
     return { id: pickRandom(result.objectIDs), searchUsed: todayLabel };
   }
 
   // Tier 2: month only e.g. "June"
-  result = await searchMet(monthLabel, deptId);
+  result = await searchMet(monthLabel);
   if (result.total > 0 && result.objectIDs) {
     return { id: pickRandom(result.objectIDs), searchUsed: monthLabel };
   }
 
-  // Tier 3: department/wildcard fallback
-  result = await searchMet('*', deptId || '');
+  // Tier 3: wildcard fallback
+  result = await searchMet('*');
   if (result.total > 0 && result.objectIDs) {
-    return { id: pickRandom(result.objectIDs), searchUsed: 'department-only' };
+    return { id: pickRandom(result.objectIDs), searchUsed: 'collection' };
   }
 
   throw new Error('No artworks found — the Met is having a quiet day.');
@@ -80,20 +79,22 @@ function renderCard(artwork, searchUsed) {
 
   card.innerHTML = `
     ${imageHtml}
-    <div class="art-card-dept">${artwork.department || 'The Met'}</div>
-    <h2>${artwork.title || 'Untitled'}</h2>
-    <div class="art-card-meta">${artwork.artistDisplayName || 'Artist unknown'}</div>
-    <div class="art-card-date">${artwork.objectDate || ''}</div>
-    <div class="cunk-block">
-      <div class="cunk-label">✦ Cunk on Art</div>
-      <div class="cunk-text cunk-loading" id="cunk-${artwork.objectID}">Consulting the oracle…</div>
+    <div class="art-card-body">
+      <div class="art-card-dept">${artwork.department || 'The Met'}</div>
+      <h2>${artwork.title || 'Untitled'}</h2>
+      <div class="art-card-meta">${artwork.artistDisplayName || 'Artist unknown'}</div>
+      <div class="art-card-date">${artwork.objectDate || ''}</div>
+      <div class="punk-block">
+        <div class="punk-label">✦ Chillomena Punk on Art</div>
+        <div class="punk-text punk-loading" id="punk-${artwork.objectID}">Consulting the oracle…</div>
+      </div>
+      ${artwork.objectURL ? `<a class="art-card-link" href="${artwork.objectURL}" target="_blank" rel="noopener">View at The Met →</a>` : ''}
     </div>
-    ${artwork.objectURL ? `<a class="art-card-link" href="${artwork.objectURL}" target="_blank" rel="noopener">View at The Met →</a>` : ''}
   `;
 
   document.getElementById('gallery').appendChild(card);
 
-  // Fetch Cunk summary asynchronously and update the card
+  // Fetch summary asynchronously and update the card
   const artworkData = {
     title: artwork.title || 'Unknown Title',
     artist: artwork.artistDisplayName || 'Unknown Artist',
@@ -107,19 +108,19 @@ function renderCard(artwork, searchUsed) {
     primaryImage: artwork.primaryImage || ''
   };
 
-  fetchCunkSummary(artworkData, searchUsed)
+  fetchSummary(artworkData, searchUsed)
     .then(summary => {
-      const el = document.getElementById(`cunk-${artwork.objectID}`);
+      const el = document.getElementById(`punk-${artwork.objectID}`);
       if (el) {
         el.textContent = summary;
-        el.classList.remove('cunk-loading');
+        el.classList.remove('punk-loading');
       }
     })
     .catch(err => {
-      const el = document.getElementById(`cunk-${artwork.objectID}`);
+      const el = document.getElementById(`punk-${artwork.objectID}`);
       if (el) {
-        el.textContent = 'Philomena is unavailable for comment at this time.';
-        el.classList.remove('cunk-loading');
+        el.textContent = 'Chillomena is unavailable for comment at this time.';
+        el.classList.remove('punk-loading');
       }
     });
 }
@@ -135,32 +136,34 @@ function clearGallery() {
   document.getElementById('gallery').innerHTML = '';
 }
 
-async function loadArt(month, day, deptId, limit = 1) {
+async function loadArt(month, day, limit = 1, showMatchStatus = true) {
   clearGallery();
   const label = `${MONTH_NAMES[month]} ${day}`;
   setStatus(`<span class="spinner"></span> Searching the Met collection for <em>${label}</em>…`);
 
   try {
-    // Override todayLabel/monthLabel if loading a different date (Surprise Me)
     const searchTodayLabel = `${MONTH_NAMES[month]} ${day}`;
     const searchMonthLabel = MONTH_NAMES[month];
 
-    // Tier 1
-    let result = await searchMet(searchTodayLabel, deptId);
-    let searchUsed = searchTodayLabel;
+    // Tier 1: exact date match e.g. "June 2"
+    let result = await searchMet(searchTodayLabel);
+    let searchUsed = 'exact-date';
+    let matchedTerm = searchTodayLabel;
 
     if (!result.total || !result.objectIDs) {
-      // Tier 2
+      // Tier 2: month match e.g. "June"
       setStatus(`<span class="spinner"></span> No exact match — trying <em>${searchMonthLabel}</em>…`);
-      result = await searchMet(searchMonthLabel, deptId);
-      searchUsed = searchMonthLabel;
+      result = await searchMet(searchMonthLabel);
+      searchUsed = 'month';
+      matchedTerm = searchMonthLabel;
     }
 
     if (!result.total || !result.objectIDs) {
-      // Tier 3
-      setStatus(`<span class="spinner"></span> Falling back to department collection…`);
-      result = await searchMet('*', deptId || '');
-      searchUsed = 'department-only';
+      // Tier 3: full collection fallback
+      setStatus(`<span class="spinner"></span> Falling back to full collection…`);
+      result = await searchMet('*');
+      searchUsed = 'collection';
+      matchedTerm = 'the full collection';
     }
 
     if (!result.total || !result.objectIDs) {
@@ -174,10 +177,7 @@ async function loadArt(month, day, deptId, limit = 1) {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
 
-    const tierLabel = searchUsed === 'department-only'
-      ? 'department collection'
-      : `"${searchUsed}"`;
-    setStatus(`<span class="spinner"></span> Found ${result.total.toLocaleString()} artworks matching ${tierLabel}. Loading…`);
+    setStatus(`<span class="spinner"></span> Loading…`);
 
     // Fetch artworks one by one, skipping those without images, until we hit limit
     let rendered = 0;
@@ -195,10 +195,14 @@ async function loadArt(month, day, deptId, limit = 1) {
     }
 
     if (rendered === 0) {
-      throw new Error('None of the matched artworks had images. Try a different department.');
+      throw new Error('None of the matched artworks had images.');
     }
 
-    setStatus(`Found ${result.total.toLocaleString()} artworks matching ${tierLabel}. Showing ${rendered}.`);
+    if (showMatchStatus) {
+      setStatus(`Found ${result.total.toLocaleString()} artworks with metadata matching <strong>"${matchedTerm}"</strong>. Showing 1 randomly selected.`);
+    } else {
+      setStatus(`Showing 1 randomly selected artwork.`);
+    }
 
   } catch (err) {
     setStatus('');
@@ -209,13 +213,11 @@ async function loadArt(month, day, deptId, limit = 1) {
 
 // ── Event listeners ──────────────────────────────────────────────────────────
 document.getElementById('load-btn').addEventListener('click', () => {
-  const deptId = document.getElementById('dept-select').value;
-  loadArt(todayMonth, todayDay, deptId, 1);
+  loadArt(todayMonth, todayDay, 1);
 });
 
 document.getElementById('random-btn').addEventListener('click', () => {
-  const deptId = document.getElementById('dept-select').value;
   const randMonth = Math.floor(Math.random() * 12);
   const randDay   = Math.floor(Math.random() * 28) + 1;
-  loadArt(randMonth, randDay, deptId, 1);
+  loadArt(randMonth, randDay, 1, false);
 });

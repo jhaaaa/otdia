@@ -189,13 +189,17 @@ main {
 
 /* Gallery grid */
 #gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
 }
 
 /* Art card */
 .art-card {
+  display: flex;
+  flex-direction: row;
+  gap: 2.5rem;
+  align-items: flex-start;
   opacity: 0;
   transform: translateY(16px);
   animation: fadeUp 0.5s ease forwards;
@@ -209,8 +213,9 @@ main {
   position: relative;
   overflow: hidden;
   background: rgba(26,20,16,0.05);
-  margin-bottom: 1.25rem;
   line-height: 0;
+  flex: 0 0 50%;
+  max-width: 50%;
 }
 
 .art-card-image-wrap img {
@@ -222,6 +227,11 @@ main {
 
 .art-card-image-wrap:hover img {
   transform: scale(1.02);
+}
+
+.art-card-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .art-card-dept {
@@ -256,8 +266,8 @@ main {
   margin-bottom: 1rem;
 }
 
-/* Cunk summary block */
-.cunk-block {
+/* Chillomena Punk summary block */
+.punk-block {
   background: rgba(184,134,11,0.06);
   border-left: 2px solid var(--gold);
   padding: 1rem 1.25rem;
@@ -265,7 +275,7 @@ main {
   border-radius: 0 2px 2px 0;
 }
 
-.cunk-label {
+.punk-label {
   font-family: 'Instrument Sans', sans-serif;
   font-size: 0.6rem;
   letter-spacing: 0.18em;
@@ -274,14 +284,14 @@ main {
   margin-bottom: 0.5rem;
 }
 
-.cunk-text {
+.punk-text {
   font-size: 0.95rem;
   line-height: 1.75;
   color: var(--ink);
   font-style: italic;
 }
 
-.cunk-loading {
+.punk-loading {
   font-family: 'Instrument Sans', sans-serif;
   font-size: 0.8rem;
   color: rgba(26,20,16,0.4);
@@ -351,6 +361,8 @@ footer a:hover {
   .date-display { text-align: left; }
   .config-bar { padding: 1rem 1.5rem; }
   main { padding: 2rem 1.5rem; }
-  #gallery { grid-template-columns: 1fr; gap: 2.5rem; }
+  #gallery { gap: 2.5rem; }
+  .art-card { flex-direction: column; }
+  .art-card-image-wrap { flex: none; max-width: 100%; width: 100%; }
   footer { padding: 1.5rem; flex-direction: column; align-items: flex-start; }
 }
