@@ -13,6 +13,27 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_GENERATION_CONFIG = {
+  temperature: 0.95,
+  maxOutputTokens: 512,
+  thinkingConfig: { thinkingBudget: 0 },
+};
+
+type GeminiCandidate = {
+  finishReason?: string;
+  content?: { parts?: Array<{ text?: string; thought?: boolean }> };
+};
+
+function extractGeminiText(candidate: GeminiCandidate | undefined): string {
+  return (
+    candidate?.content?.parts
+      ?.filter((part) => !part.thought && typeof part.text === "string")
+      .map((part) => part.text as string)
+      .join("") ?? ""
+  );
+}
+
 async function fetchJson(url: string, params?: Record<string, string>): Promise<unknown> {
   const fullUrl = params
     ? `${url}?${new URLSearchParams(params)}`
@@ -307,7 +328,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       `Artwork metadata:\n${artworkData}`;
 
     const geminiRes = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -316,7 +337,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.95, maxOutputTokens: 2000 },
+          generationConfig: GEMINI_GENERATION_CONFIG,
         }),
       }
     );
@@ -334,15 +355,41 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     const geminiData = (await geminiRes.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      candidates?: GeminiCandidate[];
     };
-    const summary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = geminiData.candidates?.[0];
+    const summary = extractGeminiText(candidate);
+
+    if (!summary) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ error: "No summary returned from Gemini." }),
+          },
+        ],
+      };
+    }
+
+    if (candidate?.finishReason === "MAX_TOKENS") {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              error: "Gemini response was truncated. Try again.",
+              partial_summary: summary,
+            }),
+          },
+        ],
+      };
+    }
 
     return {
       content: [
         {
           type: "text",
-          text: summary ?? JSON.stringify({ error: "No summary returned from Gemini." }),
+          text: summary,
         },
       ],
     };
