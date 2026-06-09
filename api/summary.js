@@ -39,7 +39,11 @@ ${artworkStr}`;
         },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.95, maxOutputTokens: 2000 }
+          generationConfig: {
+            temperature: 0.95,
+            maxOutputTokens: 512,
+            thinkingConfig: { thinkingBudget: 0 }
+          }
         })
       }
     );
@@ -50,10 +54,21 @@ ${artworkStr}`;
     }
 
     const geminiData = await geminiRes.json();
-    const summary = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = geminiData?.candidates?.[0];
+    const summary = candidate?.content?.parts
+      ?.filter((part) => !part.thought && typeof part.text === 'string')
+      .map((part) => part.text)
+      .join('');
 
     if (!summary) {
       return res.status(502).json({ error: 'No summary returned from Gemini' });
+    }
+
+    if (candidate?.finishReason === 'MAX_TOKENS') {
+      return res.status(502).json({
+        error: 'Gemini response was truncated. Try again.',
+        partial_summary: summary
+      });
     }
 
     return res.status(200).json({ summary });

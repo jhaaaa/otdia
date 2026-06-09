@@ -36,7 +36,8 @@ body:
       ],
       "generationConfig": {
         "temperature": 0.95,
-        "maxOutputTokens": 2000
+        "maxOutputTokens": 512,
+        "thinkingConfig": { "thinkingBudget": 0 }
       }
     }
 scripts:
@@ -63,7 +64,8 @@ scripts:
           }],
           generationConfig: {
               temperature: 0.95,
-              maxOutputTokens: 2000
+              maxOutputTokens: 512,
+              thinkingConfig: { thinkingBudget: 0 }
           }
       };
 
