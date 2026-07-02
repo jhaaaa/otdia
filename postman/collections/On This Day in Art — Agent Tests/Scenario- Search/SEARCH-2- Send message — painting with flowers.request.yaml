@@ -1,0 +1,21 @@
+$kind: http-request
+name: "SEARCH-2: Send message — painting with flowers"
+url: "{{baseUrl}}/api/conversations/{{conversationId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "show me a painting with flowers"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Message accepted', () => {
+          pm.response.to.have.status(200);
+          pm.expect(pm.response.json()).to.have.property('message_id');
+      });
+    language: text/javascript
+order: 2000

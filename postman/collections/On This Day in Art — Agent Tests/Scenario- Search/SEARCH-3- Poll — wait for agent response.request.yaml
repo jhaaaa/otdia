@@ -1,0 +1,32 @@
+$kind: http-request
+name: "SEARCH-3: Poll — wait for agent response"
+url: "{{baseUrl}}/api/conversations/{{conversationId}}/history"
+method: GET
+scripts:
+  - type: beforeRequest
+    code: |-
+      const start = Date.now();
+      while (Date.now() - start < 10000) {}
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const data = pm.response.json();
+      const agentMsg = (data.messages || []).find(
+          m => m.user && m.user.id === 'agent' && m.content && m.message_id
+      );
+      const attempts = parseInt(pm.collectionVariables.get('pollAttempts') || '0');
+
+      console.log(`Poll attempt ${attempts + 1}: agent message found = ${!!agentMsg}`);
+
+      if (!agentMsg) {
+          if (attempts < 6) {
+              pm.collectionVariables.set('pollAttempts', String(attempts + 1));
+              pm.setNextRequest('SEARCH-3: Poll — wait for agent response');
+          } else {
+              pm.test('Agent responded within timeout', () => pm.expect.fail('Timed out after ~60s'));
+          }
+      } else {
+          pm.test('Agent responded', () => pm.expect(agentMsg.content).to.not.be.empty);
+      }
+    language: text/javascript
+order: 3000

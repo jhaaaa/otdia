@@ -10,6 +10,7 @@ localResources:
 
 cloudResources:
   collections:
-    ../postman/collections/On This Day in Art: fbac053d-8738-4814-8fb6-a254e4186475
+    ../postman/collections/otdia: fbac053d-8738-4814-8fb6-a254e4186475
+    ../postman/collections/On This Day in Art — Agent Tests: fea3682a-936d-4ff7-b762-727207125d5e
   environments:
     ../postman/environments/On This Day in Art.environment.yaml: 1274309-368d5886-2204-431a-b1e5-4ed5d8d73293

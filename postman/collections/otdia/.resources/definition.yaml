@@ -1,5 +1,5 @@
 $kind: collection
-name: On This Day in Art
+name: otdia
 description: 5 requests for exploring The Met Museum collection and generating AI-powered artwork summaries.
 variables:
   geminiApiKey: ""

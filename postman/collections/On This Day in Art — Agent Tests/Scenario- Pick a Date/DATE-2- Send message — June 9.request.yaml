@@ -1,0 +1,21 @@
+$kind: http-request
+name: "DATE-2: Send message — June 9"
+url: "{{baseUrl}}/api/conversations/{{conversationId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "June 9"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Message accepted', () => {
+          pm.response.to.have.status(200);
+          pm.expect(pm.response.json()).to.have.property('message_id');
+      });
+    language: text/javascript
+order: 2000

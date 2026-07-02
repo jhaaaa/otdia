@@ -1,0 +1,21 @@
+$kind: http-request
+name: "OTD-2: Send message — today"
+url: "{{baseUrl}}/api/conversations/{{conversationId}}/messages"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "content": "today"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Message accepted', () => {
+          pm.response.to.have.status(200);
+          pm.expect(pm.response.json()).to.have.property('message_id');
+      });
+    language: text/javascript
+order: 2000

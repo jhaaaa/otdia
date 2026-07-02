@@ -1,0 +1,11 @@
+$kind: collection
+description: |-
+  Tests for the on-this-day-in-art Astropods agent messaging API.
+
+  Each scenario folder runs end-to-end: create conversation → send message → poll for response → assert.
+
+  Run with Collection Runner with a delay of 5000ms between requests. The Poll step retries up to 12 times (60 seconds total) before failing.
+variables:
+  baseUrl: http://localhost:3100
+  conversationId: ""
+  pollAttempts: "0"
